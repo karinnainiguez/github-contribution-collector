@@ -5,8 +5,9 @@ import (
 )
 
 func main() {
-	nc := newClient()
-
-	repos := getRepos(nc, "kubernetes-sigs")
-	fmt.Println(len(repos))
+	nc := collectContributions()
+	fmt.Printf("\nCollected %v contributions\n\n", len(nc))
+	for _, c := range nc {
+		fmt.Printf("Contribution from %v into %v\n", c.User, c.Project)
+	}
 }
