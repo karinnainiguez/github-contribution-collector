@@ -5,5 +5,8 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello World")
+	nc := newClient()
+
+	repos := getRepos(nc, "kubernetes-sigs")
+	fmt.Println(len(repos))
 }
