@@ -7,7 +7,7 @@ import (
 func main() {
 	nc := collectContributions()
 	fmt.Printf("\nCollected %v contributions\n\n", len(nc))
-	for _, c := range nc {
-		fmt.Printf("Contribution from %v into %v\n", c.User, c.Project)
-	}
+	fmt.Print("\nSending Email...\n")
+	sendMonthlyEmail(nc)
+	fmt.Println("Email sent!")
 }
