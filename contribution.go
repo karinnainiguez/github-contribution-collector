@@ -10,6 +10,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type ContributionCollection []Contribution
+
 type Contribution struct {
 	Date    time.Time
 	Project string
@@ -22,10 +24,6 @@ type ConfigFile struct {
 	Handles []string
 	Orgs    []string
 	Repos   map[string]string
-}
-
-func Testing() string {
-	return "Testing Contribution Package"
 }
 
 func getConfigFile() *ConfigFile {
@@ -52,7 +50,7 @@ func getConfigFile() *ConfigFile {
 	return &fileData
 }
 
-func collectContributions() []Contribution {
+func collectContributions() ContributionCollection {
 
 	cf := getConfigFile()
 	usrs := cf.Handles
@@ -61,7 +59,7 @@ func collectContributions() []Contribution {
 
 	nc := newClient()
 
-	var contributions []Contribution
+	var contributions ContributionCollection
 
 	for _, o := range orgs {
 		repos := getRepos(nc, o)

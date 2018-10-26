@@ -2,12 +2,24 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func main() {
+type Response struct {
+	Message string `json: "message"`
+	Ok      bool   `json: "ok"`
+}
+
+func Handler() (Response, error) {
 	nc := collectContributions()
-	fmt.Printf("\nCollected %v contributions\n\n", len(nc))
-	fmt.Print("\nSending Email...\n")
-	sendMonthlyEmail(nc)
-	fmt.Println("Email sent!")
+	nc.sendMonthlyEmail()
+	return Response{
+		Message: fmt.Sprint("Monthly Email Sent Successfully"),
+		Ok:      true,
+	}, nil
+}
+
+func main() {
+	lambda.Start(Handler)
 }

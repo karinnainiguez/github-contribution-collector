@@ -13,7 +13,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func sendMonthlyEmail(c []Contribution) error {
+func (c ContributionCollection) sendMonthlyEmail() error {
 	sort.Slice(c, func(i, j int) bool {
 		return c[i].Date.Before(c[j].Date)
 	})
