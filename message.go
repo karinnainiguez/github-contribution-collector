@@ -86,8 +86,8 @@ func createTable(c []Contribution) string {
 
 func newMessage(body string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", "kngz@amazon.com")
-	m.SetHeader("To", "kngz@amazon.com")
+	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
+	m.SetHeader("To", os.Getenv("SESVerifiedEmail"))
 	m.SetHeader("Subject", buildSubject())
 	m.SetBody("text/html", body)
 	d := gomail.NewDialer("email-smtp.us-west-2.amazonaws.com", 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
