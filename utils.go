@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
 	"time"
+
+	"github.com/kubicorn/kubicorn/pkg/logger"
 
 	"github.com/jinzhu/now"
 )
@@ -26,4 +29,11 @@ func defaultFrom() string {
 func defaultUntil() string {
 	endDate := time.Now()
 	return endDate.Format("01-02-2006")
+}
+
+func handle(e error) {
+	if e != nil {
+		logger.Critical("%s\n", e.Error())
+		os.Exit(1)
+	}
 }

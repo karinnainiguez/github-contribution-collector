@@ -1,9 +1,6 @@
 package main
 
 import (
-	"os"
-
-	"github.com/kubicorn/kubicorn/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -19,10 +16,8 @@ func reportContributions() *cobra.Command {
 		Use:       "report",
 		ValidArgs: []string{"from", "until", "email"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := doReportContributions(cc); err != nil {
-				logger.Critical("%s\n", err.Error())
-				os.Exit(1)
-			}
+			err := doReportContributions(cc)
+			handle(err)
 			return nil
 		},
 	}
@@ -42,7 +37,9 @@ func doReportContributions(c *CommandConfig) error {
 	filtered.createTable()
 	// send email if specified
 	if c.Email != "" {
-		newMessageTo(filtered, c.Email)
+		// TODO: Verify email is sent, gracefully exit otherwise.
+		err := newMessageTo(filtered, c.Email)
+		handle(err)
 	}
 
 	return nil

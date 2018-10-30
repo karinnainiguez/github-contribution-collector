@@ -29,9 +29,7 @@ func getRepo(c *github.Client, owner string, name string) *github.Repository {
 	ctx := context.Background()
 	repo, _, err := c.Repositories.Get(ctx, owner, name)
 
-	if err != nil {
-		fmt.Printf("Error getting repository: %v\n", err)
-	}
+	handle(err)
 	return repo
 }
 
@@ -49,19 +47,15 @@ func getRepos(c *github.Client, org string) []*github.Repository {
 	for {
 		u := fmt.Sprintf("orgs/%v/repos", org)
 		u, err := addOptions(u, opts)
-		if err != nil {
-			fmt.Printf("Error Adding Options: %v\n", err)
-		}
+		handle(err)
 
 		req, err := c.NewRequest("GET", u, nil)
-		if err != nil {
-			fmt.Printf("Error creating new request: %v\n", err)
-		}
+		handle(err)
+
 		var repos []*github.Repository
 		resp, err := c.Do(ctx, req, &repos)
-		if err != nil {
-			fmt.Printf("Error sending request: %v\n", err)
-		}
+		handle(err)
+
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
 			break
@@ -107,9 +101,8 @@ func getIssues(c *github.Client, repo *github.Repository, user string) []*github
 			repo.GetName(),
 			opts,
 		)
-		if err != nil {
-			fmt.Printf("Error getting issues: %v\n", err)
-		}
+		handle(err)
+
 		allIssues = append(allIssues, issues...)
 		if resp.NextPage == 0 {
 			break

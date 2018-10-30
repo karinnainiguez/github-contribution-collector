@@ -39,9 +39,8 @@ func getConfigFile() *ConfigFile {
 		Bucket: aws.String(bucket),
 		Key:    aws.String(item),
 	})
-	if err != nil {
-		fmt.Printf("ERROR GETTING ITEM: %v\n", err)
-	}
+	handle(err)
+
 	defer result.Body.Close()
 
 	if err := yaml.NewDecoder(result.Body).Decode(&fileData); err != nil {
@@ -133,8 +132,10 @@ func collectContributions() ContributionCollection {
 func (c ContributionCollection) filterMonthlyContributions() ContributionCollection {
 	var filtered ContributionCollection
 
-	startDate, _ := time.Parse("01-02-2006", yesterdayFrom())
-	endDate, _ := time.Parse("01-02-2006", yesterdayUntil())
+	startDate, err := time.Parse("01-02-2006", yesterdayFrom())
+	handle(err)
+	endDate, err := time.Parse("01-02-2006", yesterdayUntil())
+	handle(err)
 
 	for _, cont := range c {
 		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
@@ -150,8 +151,10 @@ func (c ContributionCollection) filterMonthlyContributions() ContributionCollect
 func (c ContributionCollection) defaultFilterContributions() ContributionCollection {
 	var filtered ContributionCollection
 
-	startDate, _ := time.Parse("01-02-2006", defaultFrom())
-	endDate, _ := time.Parse("01-02-2006", defaultUntil())
+	startDate, err := time.Parse("01-02-2006", defaultFrom())
+	handle(err)
+	endDate, err := time.Parse("01-02-2006", defaultUntil())
+	handle(err)
 
 	for _, cont := range c {
 		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
@@ -167,8 +170,10 @@ func (c ContributionCollection) defaultFilterContributions() ContributionCollect
 func (c ContributionCollection) filterContributions(startDateString string, endDateString string) ContributionCollection {
 	var filtered ContributionCollection
 
-	startDate, _ := time.Parse("01-02-2006", startDateString)
-	endDate, _ := time.Parse("01-02-2006", endDateString)
+	startDate, err := time.Parse("01-02-2006", startDateString)
+	handle(err)
+	endDate, err := time.Parse("01-02-2006", endDateString)
+	handle(err)
 
 	for _, cont := range c {
 		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
