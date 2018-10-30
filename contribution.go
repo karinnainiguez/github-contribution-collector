@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -127,4 +128,57 @@ func collectContributions() ContributionCollection {
 	}
 
 	return contributions
+}
+
+func (c ContributionCollection) filterMonthlyContributions() ContributionCollection {
+	var filtered ContributionCollection
+
+	startDate, _ := time.Parse("01-02-2006", yesterdayFrom())
+	endDate, _ := time.Parse("01-02-2006", yesterdayUntil())
+
+	for _, cont := range c {
+		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
+			filtered = append(filtered, cont)
+		}
+	}
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Date.Before(filtered[j].Date)
+	})
+	return filtered
+}
+
+func (c ContributionCollection) defaultFilterContributions() ContributionCollection {
+	var filtered ContributionCollection
+
+	startDate, _ := time.Parse("01-02-2006", defaultFrom())
+	endDate, _ := time.Parse("01-02-2006", defaultUntil())
+
+	for _, cont := range c {
+		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
+			filtered = append(filtered, cont)
+		}
+	}
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Date.Before(filtered[j].Date)
+	})
+	return filtered
+}
+
+func (c ContributionCollection) filterContributions(startDateString string, endDateString string) ContributionCollection {
+	var filtered ContributionCollection
+
+	startDate, _ := time.Parse("01-02-2006", startDateString)
+	endDate, _ := time.Parse("01-02-2006", endDateString)
+
+	for _, cont := range c {
+		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
+			filtered = append(filtered, cont)
+		}
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Date.Before(filtered[j].Date)
+	})
+
+	return filtered
 }

@@ -1,6 +1,11 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"os"
+
+	"github.com/kubicorn/kubicorn/pkg/logger"
+	"github.com/spf13/cobra"
+)
 
 type CommandConfig struct {
 	From  string
@@ -14,11 +19,10 @@ func reportContributions() *cobra.Command {
 		Use:       "report",
 		ValidArgs: []string{"from", "until", "email"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.Println("Printing from Report.  This is your report")
-			cmd.Println("The Flag is: ")
-			cmd.Println(cc.From)
-			// nc := collectContributions()
-			// nc.createTable()
+			if err := doReportContributions(cc); err != nil {
+				logger.Critical("%s\n", err.Error())
+				os.Exit(1)
+			}
 			return nil
 		},
 	}
@@ -26,11 +30,20 @@ func reportContributions() *cobra.Command {
 	fs := cmd.Flags()
 
 	fs.StringVarP(&cc.From, "from", "f", defaultFrom(), `Date from which to begin reporting (Default is beginning of current month)`)
-	fs.StringVarP(&cc.From, "until", "u", defaultUntil(), `Date until which to run reporting (Default is today)`)
-	fs.StringVarP(&cc.From, "email", "e", "", "Email address to send report.")
+	fs.StringVarP(&cc.Until, "until", "u", defaultUntil(), `Date until which to run reporting (Default is today)`)
+	fs.StringVarP(&cc.Email, "email", "e", "", "Email address to send report.")
 	return cmd
 }
 
-func init() {
+func doReportContributions(c *CommandConfig) error {
+	contributions := collectContributions()
+	filtered := contributions.filterContributions(c.From, c.Until)
 
+	filtered.createTable()
+	// send email if specified
+	if c.Email != "" {
+		newMessageTo(filtered, c.Email)
+	}
+
+	return nil
 }

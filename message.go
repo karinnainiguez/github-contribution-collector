@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -13,35 +12,33 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func (c ContributionCollection) sendMonthlyEmail() error {
-	sort.Slice(c, func(i, j int) bool {
-		return c[i].Date.Before(c[j].Date)
-	})
-	filtered := filterMonthlyContributions(c)
-	err := newMessage(buildEmail(filtered))
+func newMessage(c ContributionCollection) error {
+	body := buildEmail(c)
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
+	m.SetHeader("To", os.Getenv("SESVerifiedEmail"))
+	m.SetHeader("Subject", buildSubject())
+	m.SetBody("text/html", body)
+	d := gomail.NewDialer(os.Getenv("SESServerName"), 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
+
+	err := d.DialAndSend(m)
 	return err
 }
 
-func filterMonthlyContributions(c []Contribution) []Contribution {
-	var filtered []Contribution
-	var startDate time.Time
+func newMessageTo(c ContributionCollection, emailAddress string) error {
+	body := buildEmail(c)
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
+	m.SetHeader("To", emailAddress)
+	m.SetHeader("Subject", buildSubject())
+	m.SetBody("text/html", body)
+	d := gomail.NewDialer(os.Getenv("SESServerName"), 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
 
-	if os.Getenv("since") != "" {
-		startDate, _ = time.Parse("01/02/06", os.Getenv("since"))
-	} else {
-		yesterday := time.Now().AddDate(0, 0, -1)
-
-		startDate = now.New(yesterday).BeginningOfMonth()
-	}
-	for _, cont := range c {
-		if cont.Date.After(startDate) {
-			filtered = append(filtered, cont)
-		}
-	}
-	return filtered
+	err := d.DialAndSend(m)
+	return err
 }
 
-func buildEmail(c []Contribution) string {
+func buildEmail(c ContributionCollection) string {
 	var body strings.Builder
 	body.WriteString("<br/>This month the team had ")
 	body.WriteString(strconv.Itoa(len(c)))
@@ -52,7 +49,7 @@ func buildEmail(c []Contribution) string {
 	return body.String()
 }
 
-func createTable(c []Contribution) string {
+func createTable(c ContributionCollection) string {
 
 	var contTable strings.Builder
 	contTable.WriteString("<style>table,td { border: 1px solid black; padding: 2px} </style>")
@@ -82,18 +79,6 @@ func createTable(c []Contribution) string {
 	}
 	contTable.WriteString("</table>")
 	return contTable.String()
-}
-
-func newMessage(body string) error {
-	m := gomail.NewMessage()
-	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("To", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("Subject", buildSubject())
-	m.SetBody("text/html", body)
-	d := gomail.NewDialer("email-smtp.us-west-2.amazonaws.com", 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
-
-	err := d.DialAndSend(m)
-	return err
 }
 
 func buildSubject() string {
