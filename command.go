@@ -34,11 +34,11 @@ func doReportContributions(c *CommandConfig) error {
 	contributions := collectContributions()
 	filtered := contributions.filterContributions(c.From, c.Until)
 
-	filtered.createTable()
+	filtered.renderTable()
 	// send email if specified
 	if c.Email != "" {
 		// TODO: Verify email is sent, gracefully exit otherwise.
-		err := newMessageTo(filtered, c.Email)
+		err := newMessageTo(filtered, c.Email, c.From, c.Until)
 		handle(err)
 	}
 

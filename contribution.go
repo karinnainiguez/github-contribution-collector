@@ -148,25 +148,6 @@ func (c ContributionCollection) filterMonthlyContributions() ContributionCollect
 	return filtered
 }
 
-func (c ContributionCollection) defaultFilterContributions() ContributionCollection {
-	var filtered ContributionCollection
-
-	startDate, err := time.Parse("01-02-2006", defaultFrom())
-	handle(err)
-	endDate, err := time.Parse("01-02-2006", defaultUntil())
-	handle(err)
-
-	for _, cont := range c {
-		if cont.Date.After(startDate) && cont.Date.Before(endDate) {
-			filtered = append(filtered, cont)
-		}
-	}
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].Date.Before(filtered[j].Date)
-	})
-	return filtered
-}
-
 func (c ContributionCollection) filterContributions(startDateString string, endDateString string) ContributionCollection {
 	var filtered ContributionCollection
 

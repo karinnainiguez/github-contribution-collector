@@ -7,17 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/now"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ses"
 
 	"gopkg.in/gomail.v2"
 )
 
 func newMessage(c ContributionCollection) error {
-	body := buildEmail(c)
+	body, _ := buildEmail(c)
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
 	m.SetHeader("To", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("Subject", buildSubject())
+	m.SetHeader("Subject", buildMonthlySubject())
 	m.SetBody("text/html", body)
 	d := gomail.NewDialer(os.Getenv("SESServerName"), 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
 
@@ -25,28 +27,59 @@ func newMessage(c ContributionCollection) error {
 	return err
 }
 
-func newMessageTo(c ContributionCollection, emailAddress string) error {
-	body := buildEmail(c)
-	m := gomail.NewMessage()
-	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("To", emailAddress)
-	m.SetHeader("Subject", buildSubject())
-	m.SetBody("text/html", body)
-	d := gomail.NewDialer(os.Getenv("SESServerName"), 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
+func newMessageTo(c ContributionCollection, emailAddress string, startDate string, endDate string) error {
+	htmlBody, textBody := buildEmail(c)
 
-	err := d.DialAndSend(m)
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+	})
+	handle(err)
+
+	svc := ses.New(sess)
+
+	charset := "UTF-8"
+
+	input := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: []*string{aws.String(emailAddress)},
+		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Html: &ses.Content{
+					Charset: aws.String(charset),
+					Data:    aws.String(htmlBody),
+				},
+				Text: &ses.Content{
+					Charset: aws.String(charset),
+					Data:    aws.String(textBody),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String(charset),
+				Data:    aws.String(buildSubject(startDate, endDate)),
+			},
+		},
+		Source: aws.String(os.Getenv("SESVerifiedEmail")),
+	}
+
+	_, err = svc.SendEmail(input)
 	return err
 }
 
-func buildEmail(c ContributionCollection) string {
+func buildEmail(c ContributionCollection) (string, string) {
 	var body strings.Builder
-	body.WriteString("<br/>This month the team had ")
+	body.WriteString("<br/><h1>Open Source Contributions Report - EKS OSS Team</h1><br/>This month the team had ")
 	body.WriteString(strconv.Itoa(len(c)))
 	body.WriteString(" contributions into open source projects.<br/>Below is a table of all contributions for the month<br/><br/>")
 
 	body.WriteString(createTable(c))
 
-	return body.String()
+	var textBody strings.Builder
+	textBody.WriteString("Open Source Contributions Report: EKS OSS Team")
+	textBody.WriteString("\n\nThis month the team had ")
+	textBody.WriteString(strconv.Itoa(len(c)))
+
+	return body.String(), textBody.String()
 }
 
 func createTable(c ContributionCollection) string {
@@ -81,17 +114,24 @@ func createTable(c ContributionCollection) string {
 	return contTable.String()
 }
 
-func buildSubject() string {
-	var startDate time.Time
-	if os.Getenv("since") != "" {
-		startDate, _ = time.Parse("01/02/06", os.Getenv("since"))
-	} else {
-		yesterday := time.Now().AddDate(0, 0, -1)
+func buildMonthlySubject() string {
+	startDate, err := time.Parse("01-02-2006", yesterdayFrom())
+	handle(err)
 
-		startDate = now.New(yesterday).BeginningOfMonth()
-	}
 	month := startDate.Month()
 	year := startDate.Year()
 	subject := fmt.Sprint("Amazon EKS OSS Contributions - ", month, year)
+	return subject
+}
+
+func buildSubject(startDateString string, endDateString string) string {
+	startDate, err := time.Parse("01-02-2006", startDateString)
+	handle(err)
+	endDate, err := time.Parse("01-02-2006", endDateString)
+	handle(err)
+
+	sd := startDate.Format("January 2, 2006")
+	ed := endDate.Format("January 2, 2006")
+	subject := fmt.Sprintf("Amazon EKS OSS Contributions - From %v - %v", sd, ed)
 	return subject
 }
