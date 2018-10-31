@@ -10,20 +10,44 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ses"
-
-	"gopkg.in/gomail.v2"
 )
 
 func newMessage(c ContributionCollection) error {
-	body, _ := buildEmail(c)
-	m := gomail.NewMessage()
-	m.SetHeader("From", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("To", os.Getenv("SESVerifiedEmail"))
-	m.SetHeader("Subject", buildMonthlySubject())
-	m.SetBody("text/html", body)
-	d := gomail.NewDialer(os.Getenv("SESServerName"), 465, os.Getenv("SESUserName"), os.Getenv("SESPassword"))
+	htmlBody, textBody := buildMonthlyEmail(c)
 
-	err := d.DialAndSend(m)
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+	})
+	handle(err)
+
+	svc := ses.New(sess)
+
+	charset := "UTF-8"
+
+	input := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: []*string{aws.String(os.Getenv("SESVerifiedEmail"))},
+		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Html: &ses.Content{
+					Charset: aws.String(charset),
+					Data:    aws.String(htmlBody),
+				},
+				Text: &ses.Content{
+					Charset: aws.String(charset),
+					Data:    aws.String(textBody),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String(charset),
+				Data:    aws.String(buildSubject(yesterdayFrom(), yesterdayUntil())),
+			},
+		},
+		Source: aws.String(os.Getenv("SESVerifiedEmail")),
+	}
+
+	_, err = svc.SendEmail(input)
 	return err
 }
 
@@ -66,11 +90,27 @@ func newMessageTo(c ContributionCollection, emailAddress string, startDate strin
 	return err
 }
 
-func buildEmail(c ContributionCollection) (string, string) {
+func buildMonthlyEmail(c ContributionCollection) (string, string) {
 	var body strings.Builder
 	body.WriteString("<br/><h1>Open Source Contributions Report - EKS OSS Team</h1><br/>This month the team had ")
 	body.WriteString(strconv.Itoa(len(c)))
 	body.WriteString(" contributions into open source projects.<br/>Below is a table of all contributions for the month<br/><br/>")
+
+	body.WriteString(createTable(c))
+
+	var textBody strings.Builder
+	textBody.WriteString("Open Source Contributions Report: EKS OSS Team")
+	textBody.WriteString("\n\nThis month the team had ")
+	textBody.WriteString(strconv.Itoa(len(c)))
+
+	return body.String(), textBody.String()
+}
+
+func buildEmail(c ContributionCollection) (string, string) {
+	var body strings.Builder
+	body.WriteString("<br/><h1>Open Source Contributions Report - EKS OSS Team</h1><br/>During this time period the team had ")
+	body.WriteString(strconv.Itoa(len(c)))
+	body.WriteString(" contributions into open source projects.<br/>Below is a table of all contributions<br/><br/>")
 
 	body.WriteString(createTable(c))
 

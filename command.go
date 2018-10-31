@@ -31,10 +31,13 @@ func reportContributions() *cobra.Command {
 }
 
 func doReportContributions(c *CommandConfig) error {
+	verifyDate(c.From)
+	verifyDate(c.Until)
 	contributions := collectContributions()
 	filtered := contributions.filterContributions(c.From, c.Until)
 
 	filtered.renderTable()
+
 	// send email if specified
 	if c.Email != "" {
 		// TODO: Verify email is sent, gracefully exit otherwise.

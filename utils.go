@@ -9,6 +9,11 @@ import (
 	"github.com/jinzhu/now"
 )
 
+func verifyDate(dateString string) {
+	_, err := time.Parse("01-02-2006", dateString)
+	handle(err)
+}
+
 func yesterdayFrom() string {
 	yesterday := time.Now().AddDate(0, 0, -1)
 	startDate := now.New(yesterday).BeginningOfMonth()
