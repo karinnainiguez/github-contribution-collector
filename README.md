@@ -52,8 +52,10 @@ Once you have cloned and installed the tool (and dependencies) on your machine, 
 1. Ensure that the yaml file containing your team's information is set up either in an S3 bucket, or locally (see below for appropriate flag).  The file must contain a section for handles, orgs, and repos as shown above. 
 2. AWS credentials must be made accessible on your local machine.  This can be done through environment variables, or ```~/.aws/credentials``` file.  But the credentials must be for an account with access to the S3 bucket and SES account created in the prerequisites section. 
 3. Environment Variables: the following environment variables must be set up in order for the tool to run properly: 
-    * GITHUBKEY: Containing the API Key obtained through GitHub during the prerequisites section.
-    * SESVerifiedEmail: An email address that has been verified.  This will be used as the **sender** and should be from the verified email address list on your AWS Simple Email Service profile. 
+    * **GITHUBKEY**: Containing the API Key obtained through GitHub during the prerequisites section.
+    * **SESVerifiedEmail**: An email address that has been verified.  This will be used as the **sender** and should be from the verified email address list on your AWS Simple Email Service profile. 
+    * **S3BucketName**: OPTIONAL - the bucket name given to the resource created in prerequisites.  (in order to exclude this variable, you must use the ```--local-file``` flag during command)
+    * **S3ObjectName**: OPTIONAL - the object name within the bucket. (in order to exclude this variable, you must use the ```--local-file``` flag during command)
 
 Once those steps are complete, you'll be able to run commands with the tool in order to display a table in your terminal.  The table will contain contributions for your team.  Below are some supported commands and flags: 
 
@@ -63,12 +65,17 @@ eks-oss-contributions report
 ```
 If you'd like to specify a ```--from``` and/or ```--until``` flag, the tool will display the contributions between those dates:
 ```
-eks-oss-contributions report --from "03-01-2018" --until 03-15-2018
+eks-oss-contributions report --from 03-01-2018 --until 03-15-2018
 ```
 
-Another available optional flag ```--email``` will send an email containing the data to the specified (verified) email address:
+Available optional flag ```--email``` will send an email containing the data to the specified (verified) email address:
 ```
 eks-oss-contributions report --email adrs@example.com
+```
+
+To use a local yaml file with team imformation instead of an S3 bucket with an object, use the optional ```--local-file``` flag, and provide the complete path: 
+```
+eks-oss-contributions report --local-file /Users/username/folder/filename.yaml
 ```
  
 
@@ -81,6 +88,8 @@ The attached zip file can be used as a Golang Lambda function.  The lambda funct
     * In the Environment Variable section, ensure that the following Environment Varibles are defined: 
         * **GITHUBKEY**: Containing the API Key obtained through GitHub during the prerequisites section.
         * **SESVerifiedEmail**: An email address that has been verified.  This will be used as the **sender** and should be from the verified email address list on your AWS Simple Email Service profile. 
+        * **S3BucketName**: The bucket name given to the resource created in prerequisites.  (this is not optional in this process)
+        * **S3ObjectName**: The object name within the bucket. (this is not optional in this process)
     * In the Basic settings section, increase the timeout to 15 minutes.
 2. Trigger Lambda Function Using CloudWatch Event. 
     * On the AWS Lambda Console, there is an option to add triggers from a list.  Click on CloudWatch Events.

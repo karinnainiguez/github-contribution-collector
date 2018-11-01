@@ -8,6 +8,7 @@ type CommandConfig struct {
 	From  string
 	Until string
 	Email string
+	File  string
 }
 
 func reportContributions() *cobra.Command {
@@ -27,13 +28,21 @@ func reportContributions() *cobra.Command {
 	fs.StringVarP(&cc.From, "from", "f", defaultFrom(), `Date from which to begin reporting (Default is beginning of current month)`)
 	fs.StringVarP(&cc.Until, "until", "u", defaultUntil(), `Date until which to run reporting (Default is today)`)
 	fs.StringVarP(&cc.Email, "email", "e", "", "Email address to send report.")
+	fs.StringVarP(&cc.File, "local-file", "l", "", "Local yaml file (optional replacement for S3 bucket with file)")
 	return cmd
 }
 
 func doReportContributions(c *CommandConfig) error {
 	verifyDate(c.From)
 	verifyDate(c.Until)
-	contributions := collectContributions()
+	var contributions ContributionCollection
+
+	if c.File != "" {
+		contributions = collectContributionsLocally(c.File)
+	} else {
+		contributions = collectContributions()
+	}
+
 	filtered := contributions.filterContributions(c.From, c.Until)
 
 	filtered.renderTable()

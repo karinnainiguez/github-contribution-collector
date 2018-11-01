@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -28,8 +31,8 @@ type ConfigFile struct {
 }
 
 func getConfigFile() *ConfigFile {
-	bucket := "osscontributions-eksteam"
-	item := "configs.yaml"
+	bucket := os.Getenv("S3BucketName")
+	item := os.Getenv("S3ObjectName")
 	var fileData ConfigFile
 
 	sess := session.New()
@@ -50,9 +53,104 @@ func getConfigFile() *ConfigFile {
 	return &fileData
 }
 
+func getLocalConfigFile(pathString string) *ConfigFile {
+	var cf ConfigFile
+	absPath, _ := filepath.Abs(pathString)
+
+	reader, err := os.Open(absPath)
+	handle(err)
+
+	buf, _ := ioutil.ReadAll(reader)
+
+	err = yaml.Unmarshal(buf, &cf)
+	handle(err)
+
+	return &cf
+
+}
+
 func collectContributions() ContributionCollection {
 
 	cf := getConfigFile()
+	usrs := cf.Handles
+	orgs := cf.Orgs
+	repos := cf.Repos
+
+	nc := newClient()
+
+	var contributions ContributionCollection
+
+	for _, o := range orgs {
+		repos := getRepos(nc, o)
+
+		for _, r := range repos {
+
+			for _, usr := range usrs {
+				iss := getIssues(nc, r, usr)
+				for _, i := range iss {
+					if i.IsPullRequest() {
+						newCont := Contribution{
+							Date:    i.GetCreatedAt(),
+							Project: r.GetFullName(),
+							Type:    "Pull Request",
+							User:    i.User.GetLogin(),
+							URL:     i.GetHTMLURL(),
+						}
+						contributions = append(contributions, newCont)
+					} else {
+						newCont := Contribution{
+							Date:    i.GetCreatedAt(),
+							Project: r.GetFullName(),
+							Type:    "Issue",
+							User:    i.User.GetLogin(),
+							URL:     i.GetHTMLURL(),
+						}
+						contributions = append(contributions, newCont)
+					}
+
+				}
+			}
+		}
+	}
+
+	for owner, repo := range repos {
+
+		r := getRepo(nc, owner, repo)
+
+		for _, usr := range usrs {
+			iss := getIssues(nc, r, usr)
+			for _, i := range iss {
+
+				if i.IsPullRequest() {
+					newCont := Contribution{
+						Date:    i.GetCreatedAt(),
+						Project: r.GetFullName(),
+						Type:    "Pull Request",
+						User:    i.User.GetLogin(),
+						URL:     i.GetHTMLURL(),
+					}
+					contributions = append(contributions, newCont)
+				} else {
+					newCont := Contribution{
+						Date:    i.GetCreatedAt(),
+						Project: r.GetFullName(),
+						Type:    "Issue",
+						User:    i.User.GetLogin(),
+						URL:     i.GetHTMLURL(),
+					}
+					contributions = append(contributions, newCont)
+				}
+			}
+		}
+
+	}
+
+	return contributions
+}
+
+func collectContributionsLocally(pathString string) ContributionCollection {
+
+	cf := getLocalConfigFile(pathString)
 	usrs := cf.Handles
 	orgs := cf.Orgs
 	repos := cf.Repos

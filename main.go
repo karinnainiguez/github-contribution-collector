@@ -7,6 +7,7 @@ import (
 )
 
 /*
+
 // Response struct used for Lambda Response.
 type Response struct {
 	Message string `json: "message"`
@@ -16,7 +17,7 @@ type Response struct {
 // Handler Function used as lamda.Start function in main.
 func Handler() (Response, error) {
 	nc := collectContributions()
-	nc.sendMonthlyEmail()
+	newMessage(nc)
 	return Response{
 		Message: fmt.Sprint("Monthly Email Sent Successfully"),
 		Ok:      true,
