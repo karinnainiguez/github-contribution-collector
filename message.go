@@ -41,7 +41,7 @@ func newMessage(c ContributionCollection) error {
 			},
 			Subject: &ses.Content{
 				Charset: aws.String(charset),
-				Data:    aws.String(buildSubject(yesterdayFrom(), yesterdayUntil())),
+				Data:    aws.String(buildMonthlySubject()),
 			},
 		},
 		Source: aws.String(os.Getenv("SESVerifiedEmail")),
