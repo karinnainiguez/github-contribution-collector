@@ -36,13 +36,15 @@ func doReportContributions(c *CommandConfig) error {
 	verifyDate(c.From)
 	verifyDate(c.Until)
 	var contributions ContributionCollection
+	var err error
 
 	if c.File != "" {
-		contributions = collectContributionsLocally(c.File)
+		contributions, err = collectContributionsLocallyConcurrently(c.File)
 	} else {
-		contributions = collectContributions()
+		contributions, err = collectContributionsConcurrently()
 	}
 
+	warn(err)
 	filtered := contributions.filterContributions(c.From, c.Until)
 
 	filtered.renderTable()

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
+	"time"
 
 	"github.com/google/go-querystring/query"
 
@@ -50,7 +52,16 @@ func getRepos(c *github.Client, org string) []*github.Repository {
 		handle(err)
 
 		req, err := c.NewRequest("GET", u, nil)
-		handle(err)
+		if err != nil {
+			for err != nil && strings.Contains(err.Error(), "403 You have triggered an abuse detection mechanism") {
+				time.Sleep(3 * time.Second)
+				req, err = c.NewRequest("GET", u, nil)
+			}
+			if err != nil {
+				handle(err)
+				break
+			}
+		}
 
 		var repos []*github.Repository
 		resp, err := c.Do(ctx, req, &repos)
@@ -110,4 +121,72 @@ func getIssues(c *github.Client, repo *github.Repository, user string) []*github
 		opts.Page = resp.NextPage
 	}
 	return allIssues
+}
+
+type issueResponse struct {
+	issues []*github.Issue
+	err    error
+}
+
+func getIssuesConcurrently(
+	c *github.Client,
+	repo *github.Repository,
+	user string,
+	respChan chan issueResponse,
+	tokens chan string) {
+
+	// reserve token from sem (indicates we will use resources)
+	tokens <- "token"
+
+	// send API call
+	opts := &github.IssueListByRepoOptions{
+		State:       "all",
+		Creator:     user,
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	var allIssues []*github.Issue
+	var err error
+	for {
+		issues, resp, possErr := c.Issues.ListByRepo(
+			context.Background(),
+			repo.GetOwner().GetLogin(),
+			repo.GetName(),
+			opts,
+		)
+
+		if possErr != nil {
+			for possErr != nil && (strings.Contains(possErr.Error(), "403 You have triggered an abuse detection mechanism") || strings.Contains(possErr.Error(), "dial tcp: lookup api.github.com: no such host")) {
+				time.Sleep(3 * time.Second)
+				issues, resp, possErr = c.Issues.ListByRepo(
+					context.Background(),
+					repo.GetOwner().GetLogin(),
+					repo.GetName(),
+					opts,
+				)
+			}
+		}
+		if possErr != nil {
+			err = possErr
+			break
+		}
+		defer resp.Body.Close()
+
+		allIssues = append(allIssues, issues...)
+
+		if resp == nil || resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+
+	}
+
+	// take token back (no longer using resources)
+	<-tokens
+
+	// add to response channel
+	respChan <- issueResponse{
+		issues: allIssues,
+		err:    err,
+	}
+
 }

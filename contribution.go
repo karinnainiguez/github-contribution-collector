@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -69,162 +71,144 @@ func getLocalConfigFile(pathString string) *ConfigFile {
 
 }
 
-func collectContributions() ContributionCollection {
+func collectContributionsConcurrently() (contributions ContributionCollection, err error) {
 
 	cf := getConfigFile()
 	usrs := cf.Handles
 	orgs := cf.Orgs
 	repos := cf.Repos
-
 	nc := newClient()
 
-	var contributions ContributionCollection
+	// make tokens channel
+	tokens := make(chan string, 200)
+	// make respChannel
+	respChan := make(chan issueResponse)
 
+	// loop through and send goroutine for each user/repo and keep track of num
+	routines := 0
 	for _, o := range orgs {
 		repos := getRepos(nc, o)
-
 		for _, r := range repos {
-
 			for _, usr := range usrs {
-				iss := getIssues(nc, r, usr)
-				for _, i := range iss {
-					if i.IsPullRequest() {
-						newCont := Contribution{
-							Date:    i.GetCreatedAt(),
-							Project: r.GetFullName(),
-							Type:    "Pull Request",
-							User:    i.User.GetLogin(),
-							URL:     i.GetHTMLURL(),
-						}
-						contributions = append(contributions, newCont)
-					} else {
-						newCont := Contribution{
-							Date:    i.GetCreatedAt(),
-							Project: r.GetFullName(),
-							Type:    "Issue",
-							User:    i.User.GetLogin(),
-							URL:     i.GetHTMLURL(),
-						}
-						contributions = append(contributions, newCont)
-					}
-
-				}
+				routines++
+				go getIssuesConcurrently(nc, r, usr, respChan, tokens)
 			}
 		}
 	}
 
 	for owner, repo := range repos {
-
 		r := getRepo(nc, owner, repo)
-
 		for _, usr := range usrs {
-			iss := getIssues(nc, r, usr)
-			for _, i := range iss {
-
-				if i.IsPullRequest() {
-					newCont := Contribution{
-						Date:    i.GetCreatedAt(),
-						Project: r.GetFullName(),
-						Type:    "Pull Request",
-						User:    i.User.GetLogin(),
-						URL:     i.GetHTMLURL(),
-					}
-					contributions = append(contributions, newCont)
-				} else {
-					newCont := Contribution{
-						Date:    i.GetCreatedAt(),
-						Project: r.GetFullName(),
-						Type:    "Issue",
-						User:    i.User.GetLogin(),
-						URL:     i.GetHTMLURL(),
-					}
-					contributions = append(contributions, newCont)
-				}
-			}
+			routines++
+			go getIssuesConcurrently(nc, r, usr, respChan, tokens)
 		}
 
 	}
 
-	return contributions
+	// create new contributionCollection
+	possibleErrors := make(map[string]int)
+
+	// combine all data
+	combineResponses(respChan, &contributions, routines, possibleErrors)
+	if len(possibleErrors) > 0 {
+		var sb strings.Builder
+		for strErr, occ := range possibleErrors {
+			str := fmt.Sprintf("%v: %v\n", strErr, occ)
+			sb.WriteString(str)
+		}
+		err = errors.New(sb.String())
+	}
+
+	// return combined data
+	return contributions, err
 }
 
-func collectContributionsLocally(pathString string) ContributionCollection {
+func collectContributionsLocallyConcurrently(pathString string) (contributions ContributionCollection, err error) {
 
 	cf := getLocalConfigFile(pathString)
 	usrs := cf.Handles
 	orgs := cf.Orgs
 	repos := cf.Repos
-
 	nc := newClient()
 
-	var contributions ContributionCollection
+	// make tokens channel
+	tokens := make(chan string, 200)
+	// make respChannel
+	respChan := make(chan issueResponse)
 
+	// loop through and send goroutine for each user/repo and keep track of num
+	routines := 0
 	for _, o := range orgs {
 		repos := getRepos(nc, o)
-
 		for _, r := range repos {
-
 			for _, usr := range usrs {
-				iss := getIssues(nc, r, usr)
-				for _, i := range iss {
-					if i.IsPullRequest() {
-						newCont := Contribution{
-							Date:    i.GetCreatedAt(),
-							Project: r.GetFullName(),
-							Type:    "Pull Request",
-							User:    i.User.GetLogin(),
-							URL:     i.GetHTMLURL(),
-						}
-						contributions = append(contributions, newCont)
-					} else {
-						newCont := Contribution{
-							Date:    i.GetCreatedAt(),
-							Project: r.GetFullName(),
-							Type:    "Issue",
-							User:    i.User.GetLogin(),
-							URL:     i.GetHTMLURL(),
-						}
-						contributions = append(contributions, newCont)
-					}
-
-				}
+				routines++
+				go getIssuesConcurrently(nc, r, usr, respChan, tokens)
 			}
 		}
 	}
 
 	for owner, repo := range repos {
-
 		r := getRepo(nc, owner, repo)
-
 		for _, usr := range usrs {
-			iss := getIssues(nc, r, usr)
-			for _, i := range iss {
-
-				if i.IsPullRequest() {
-					newCont := Contribution{
-						Date:    i.GetCreatedAt(),
-						Project: r.GetFullName(),
-						Type:    "Pull Request",
-						User:    i.User.GetLogin(),
-						URL:     i.GetHTMLURL(),
-					}
-					contributions = append(contributions, newCont)
-				} else {
-					newCont := Contribution{
-						Date:    i.GetCreatedAt(),
-						Project: r.GetFullName(),
-						Type:    "Issue",
-						User:    i.User.GetLogin(),
-						URL:     i.GetHTMLURL(),
-					}
-					contributions = append(contributions, newCont)
-				}
-			}
+			routines++
+			go getIssuesConcurrently(nc, r, usr, respChan, tokens)
 		}
 
 	}
 
-	return contributions
+	// create new contributionCollection and possibleErrors
+	possibleErrors := make(map[string]int)
+
+	// combine all data
+	combineResponses(respChan, &contributions, routines, possibleErrors)
+	if len(possibleErrors) > 0 {
+		var sb strings.Builder
+		for strErr, occ := range possibleErrors {
+			str := fmt.Sprintf("%v: %v\n", strErr, occ)
+			sb.WriteString(str)
+		}
+		err = errors.New(sb.String())
+	}
+
+	// return combined data
+	return contributions, err
+}
+
+func combineResponses(
+	respChan chan issueResponse,
+	collection *ContributionCollection,
+	desired int,
+	errCollection map[string]int) {
+
+	for i := 0; i < desired; i++ {
+		resp := <-respChan
+		for _, i := range resp.issues {
+			if i.IsPullRequest() {
+				newCont := Contribution{
+					Date:    i.GetCreatedAt(),
+					Project: obtainRepoName(i.GetHTMLURL()),
+					Type:    "Pull Request",
+					User:    i.User.GetLogin(),
+					URL:     i.GetHTMLURL(),
+				}
+				*collection = append(*collection, newCont)
+
+			} else {
+				newCont := Contribution{
+					Date:    i.GetCreatedAt(),
+					Project: obtainRepoName(i.GetHTMLURL()),
+					Type:    "Issue",
+					User:    i.User.GetLogin(),
+					URL:     i.GetHTMLURL(),
+				}
+				*collection = append(*collection, newCont)
+			}
+		}
+		if resp.err != nil {
+			errCollection[resp.err.Error()]++
+		}
+	}
 }
 
 func (c ContributionCollection) filterMonthlyContributions() ContributionCollection {
@@ -265,4 +249,12 @@ func (c ContributionCollection) filterContributions(startDateString string, endD
 	})
 
 	return filtered
+}
+
+func obtainRepoName(url string) string {
+	arr := strings.Split(url, "/")
+	if len(arr) < 5 {
+		return ""
+	}
+	return arr[3] + "/" + arr[4]
 }

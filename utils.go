@@ -42,3 +42,9 @@ func handle(e error) {
 		os.Exit(1)
 	}
 }
+
+func warn(e error) {
+	if e != nil {
+		logger.Critical("%s\n", e.Error())
+	}
+}
