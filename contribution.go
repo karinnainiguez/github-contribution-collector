@@ -19,11 +19,12 @@ import (
 type ContributionCollection []Contribution
 
 type Contribution struct {
-	Date    time.Time
-	Project string
-	Type    string
-	User    string
-	URL     string
+	Date        time.Time
+	Project     string
+	Type        string
+	User        string
+	URL         string
+	Description string
 }
 
 type ConfigFile struct {
@@ -186,21 +187,23 @@ func combineResponses(
 		for _, i := range resp.issues {
 			if i.IsPullRequest() {
 				newCont := Contribution{
-					Date:    i.GetCreatedAt(),
-					Project: obtainRepoName(i.GetHTMLURL()),
-					Type:    "Pull Request",
-					User:    i.User.GetLogin(),
-					URL:     i.GetHTMLURL(),
+					Date:        i.GetCreatedAt(),
+					Project:     obtainRepoName(i.GetHTMLURL()),
+					Type:        "Pull Request",
+					User:        i.User.GetLogin(),
+					URL:         i.GetHTMLURL(),
+					Description: i.GetTitle(),
 				}
 				*collection = append(*collection, newCont)
 
 			} else {
 				newCont := Contribution{
-					Date:    i.GetCreatedAt(),
-					Project: obtainRepoName(i.GetHTMLURL()),
-					Type:    "Issue",
-					User:    i.User.GetLogin(),
-					URL:     i.GetHTMLURL(),
+					Date:        i.GetCreatedAt(),
+					Project:     obtainRepoName(i.GetHTMLURL()),
+					Type:        "Issue",
+					User:        i.User.GetLogin(),
+					URL:         i.GetHTMLURL(),
+					Description: i.GetTitle(),
 				}
 				*collection = append(*collection, newCont)
 			}
