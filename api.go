@@ -155,7 +155,7 @@ func getIssuesConcurrently(
 		)
 
 		if possErr != nil {
-			for possErr != nil && (strings.Contains(possErr.Error(), "403 You have triggered an abuse detection mechanism") || strings.Contains(possErr.Error(), "dial tcp: lookup api.github.com: no such host")) {
+			for possErr != nil && (strings.Contains(possErr.Error(), "403 You have triggered an abuse detection mechanism") || strings.Contains(possErr.Error(), "dial tcp: lookup api.github.com: no such host") || strings.Contains(possErr.Error(), "socket: too many open files")) {
 				time.Sleep(3 * time.Second)
 				issues, resp, possErr = c.Issues.ListByRepo(
 					context.Background(),

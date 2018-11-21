@@ -127,7 +127,7 @@ func createTable(c ContributionCollection) string {
 	var contTable strings.Builder
 	contTable.WriteString("<style>table,td { border: 1px solid black; padding: 2px} </style>")
 
-	contTable.WriteString("<table><tr><th>Date</th><th>Project</th><th>Type</th><th>User</th><th>Link</th>th>Description</th></tr>")
+	contTable.WriteString("<table><tr><th>Date</th><th>Project</th><th>Type</th><th>User</th><th>Link</th><th>Description</th></tr>")
 	for _, cont := range c {
 		contTable.WriteString("<tr>")
 
