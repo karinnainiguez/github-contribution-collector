@@ -51,7 +51,6 @@ func doReportContributions(c *CommandConfig) error {
 
 	// send email if specified
 	if c.Email != "" {
-		// TODO: Verify email is sent, gracefully exit otherwise.
 		err := newMessageTo(filtered, c.Email, c.From, c.Until)
 		handle(err)
 	}

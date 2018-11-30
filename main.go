@@ -1,12 +1,11 @@
 package main
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/spf13/cobra"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
-/*
 // Response struct used for Lambda Response.
 type Response struct {
 	Message string `json: "message"`
@@ -15,21 +14,21 @@ type Response struct {
 
 // Handler Function used as lamda.Start function in main.
 func Handler() (Response, error) {
-	nc := collectContributions()
+	nc, err := collectContributionsConcurrently()
 	filtered := nc.filterMonthlyContributions()
 	newMessage(filtered)
 	return Response{
 		Message: fmt.Sprint("Monthly Email Sent Successfully"),
 		Ok:      true,
-	}, nil
+	}, err
 }
 
 // Main Function used for Lambda
 func main() {
 	lambda.Start(Handler)
 }
-*/
 
+/*
 // Main Function used for CLI
 func main() {
 	cmd := &cobra.Command{
@@ -44,3 +43,4 @@ func main() {
 	}
 
 }
+*/

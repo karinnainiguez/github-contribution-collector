@@ -1,8 +1,8 @@
-# EKS OSS Contributions
+# GitHub Contribution Collector
 
 
 ## Usage
-This tool can be used to measure the contributions into open source projects of an entire team.  Originally created to facilitate metrics for the EKS OSS team, it can also be applied to any other team by using the steps below.  To get started clone and install this repository inside of your GOPATH. (or use the ```go get github.com/karinnainiguez/eks-oss-contributions``` command)
+This tool can be used to measure the contributions into open source projects of an entire team.  Originally created to facilitate metrics for the Amazon Kubernetes OSS team, it can also be applied to any other team by using the steps below.  To get started clone and install this repository inside of your GOPATH. (or use the ```go get github.com/karinnainiguez/github-contribution-collector``` command)
 
 ### Prerequisites
 In order to use the tool as either a Command Line Interface locally, or a recurring AWS Lambda Function, there are several prerequisites the user will need in order to set up functionality. 
@@ -61,21 +61,21 @@ Once those steps are complete, you'll be able to run commands with the tool in o
 
 To list all contributions for your team in the provided repositories so far during the current month: 
 ```
-eks-oss-contributions report
+github-contribution-collector report
 ```
 If you'd like to specify a ```--from``` and/or ```--until``` flag, the tool will display the contributions between those dates:
 ```
-eks-oss-contributions report --from 03-01-2018 --until 03-15-2018
+github-contribution-collector report --from 03-01-2018 --until 03-15-2018
 ```
 
 Available optional flag ```--email``` will send an email containing the data to the specified (verified) email address:
 ```
-eks-oss-contributions report --email adrs@example.com
+github-contribution-collector report --email adrs@example.com
 ```
 
 To use a local yaml file with team imformation instead of an S3 bucket with an object, use the optional ```--local-file``` flag, and provide the complete path: 
 ```
-eks-oss-contributions report --local-file /Users/username/folder/filename.yaml
+github-contribution-collector report --local-file /Users/username/folder/filename.yaml
 ```
  
 
@@ -84,7 +84,7 @@ The attached zip file can be used as a Golang Lambda function.  The lambda funct
 1. Create a Lambda Function.  
     * From the AWS Lambda console, select "Create Function" button.  
     * Name the function, select the Go 1.x runtime, and use the existing role created during the prerequisites (that will ensure that your lambda function has access to all other necessary AWS resources). 
-    * In the Function code section, upload the zip file in the repository and name the Handler "eks-oss-contributions"
+    * In the Function code section, upload the zip file in the repository and name the Handler "github-contribution-collector"
     * In the Environment Variable section, ensure that the following Environment Varibles are defined: 
         * **GITHUBKEY**: Containing the API Key obtained through GitHub during the prerequisites section.
         * **SESVerifiedEmail**: An email address that has been verified.  This will be used as the **sender** and should be from the verified email address list on your AWS Simple Email Service profile. 

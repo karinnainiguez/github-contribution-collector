@@ -92,14 +92,14 @@ func newMessageTo(c ContributionCollection, emailAddress string, startDate strin
 
 func buildMonthlyEmail(c ContributionCollection) (string, string) {
 	var body strings.Builder
-	body.WriteString("<br/><h1>Open Source Contributions Report - EKS OSS Team</h1><br/>This month the team had ")
+	body.WriteString("<br/><h1>GitHub Open Source Contributions Report</h1><br/>This month the team had ")
 	body.WriteString(strconv.Itoa(len(c)))
 	body.WriteString(" contributions into open source projects.<br/>Below is a table of all contributions for the month<br/><br/>")
 
 	body.WriteString(createTable(c))
 
 	var textBody strings.Builder
-	textBody.WriteString("Open Source Contributions Report: EKS OSS Team")
+	textBody.WriteString("Open Source Contributions Report: Team GitHub Contributions")
 	textBody.WriteString("\n\nThis month the team had ")
 	textBody.WriteString(strconv.Itoa(len(c)))
 
@@ -108,14 +108,14 @@ func buildMonthlyEmail(c ContributionCollection) (string, string) {
 
 func buildEmail(c ContributionCollection) (string, string) {
 	var body strings.Builder
-	body.WriteString("<br/><h1>Open Source Contributions Report - EKS OSS Team</h1><br/>During this time period the team had ")
+	body.WriteString("<br/><h1>Open Source Contributions Report - Team GitHub Contributions</h1><br/>During this time period the team had ")
 	body.WriteString(strconv.Itoa(len(c)))
 	body.WriteString(" contributions into open source projects.<br/>Below is a table of all contributions<br/><br/>")
 
 	body.WriteString(createTable(c))
 
 	var textBody strings.Builder
-	textBody.WriteString("Open Source Contributions Report: EKS OSS Team")
+	textBody.WriteString("Open Source Contributions Report: Team GitHub Contributions")
 	textBody.WriteString("\n\nThis month the team had ")
 	textBody.WriteString(strconv.Itoa(len(c)))
 
@@ -163,7 +163,7 @@ func buildMonthlySubject() string {
 
 	month := startDate.Month()
 	year := startDate.Year()
-	subject := fmt.Sprint("Amazon EKS OSS Contributions - ", month, year)
+	subject := fmt.Sprint("Team GitHub Contributions - ", month, year)
 	return subject
 }
 
@@ -175,6 +175,6 @@ func buildSubject(startDateString string, endDateString string) string {
 
 	sd := startDate.Format("January 2, 2006")
 	ed := endDate.Format("January 2, 2006")
-	subject := fmt.Sprintf("Amazon EKS OSS Contributions - From %v - %v", sd, ed)
+	subject := fmt.Sprintf("Team GitHub Contributions - From %v - %v", sd, ed)
 	return subject
 }
