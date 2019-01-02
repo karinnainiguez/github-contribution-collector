@@ -1,10 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"os"
 
-	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/spf13/cobra"
 )
+
+/*
 
 // Response struct used for Lambda Response.
 type Response struct {
@@ -27,8 +29,8 @@ func Handler() (Response, error) {
 func main() {
 	lambda.Start(Handler)
 }
+*/
 
-/*
 // Main Function used for CLI
 func main() {
 	cmd := &cobra.Command{
@@ -43,4 +45,3 @@ func main() {
 	}
 
 }
-*/

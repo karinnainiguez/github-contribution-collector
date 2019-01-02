@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type ContributionCollection []Contribution
@@ -97,7 +97,7 @@ func collectContributionsConcurrently() (contributions ContributionCollection, e
 		}
 	}
 
-	for owner, repo := range repos {
+	for repo, owner := range repos {
 		r := getRepo(nc, owner, repo)
 		for _, usr := range usrs {
 			routines++

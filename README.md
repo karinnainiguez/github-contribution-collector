@@ -37,7 +37,11 @@ You will need:
         - orgname1
         - org-name2
         - third-org-name
-        repos: { owner-name: repo-name, second-owner: repo }
+        repos: { 
+            repo1: owner1,
+            repo2: owner2, 
+            repo3: owner3,
+        }
     ```
 4. AWS Application Role with access to AWSLambda
     * Within your AWS account, create an application role and attach appropriate policies (including access to AWSLambda)
