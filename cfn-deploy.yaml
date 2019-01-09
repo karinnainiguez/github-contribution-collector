@@ -1,0 +1,96 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  GitHubAPIKey:
+    Type: String
+
+  SESVerifiedEmail:
+    Type: String
+
+  S3ObjectName:
+    Type: String
+    Default: config.yaml
+
+Resources:
+
+  ConfigBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "aws:kms"
+      VersioningConfiguration:
+        Status: Enabled
+
+  ReportFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRole",
+              "Principal": { "Service": "lambda.amazonaws.com" }
+            }
+          ]
+        }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AllowEmailS3Access
+          PolicyDocument: !Sub |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ses:SendEmail",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::${ConfigBucket}/${S3ObjectName}"
+                }
+              ]
+            }
+
+  ReportFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: github-contribution-collector.zip
+      Handler: github-contribution-collector
+      MemorySize: 128
+      Role: !GetAtt ReportFunctionRole.Arn
+      Runtime: go1.x
+      Timeout: 900
+      Environment:
+        Variables:
+          GITHUBKEY: !Ref GitHubAPIKey
+          SESVerifiedEmail: !Ref SESVerifiedEmail
+          S3BucketName: !Ref ConfigBucket
+          S3ObjectName: !Ref S3ObjectName
+
+  ReportTrigger:
+    Type: AWS::Events::Rule
+    Properties:
+      State: ENABLED
+      ScheduleExpression: "cron(0 6 1 1/1 ? *)"
+      Targets:
+        - Id: ReportLambdaFunction
+          Arn: !GetAtt ReportFunction.Arn
+
+  ReportTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      Principal: events.amazonaws.com
+      FunctionName: !Ref ReportFunction
+      SourceArn: !GetAtt ReportTrigger.Arn
